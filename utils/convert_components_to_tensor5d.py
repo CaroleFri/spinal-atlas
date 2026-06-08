@@ -10,15 +10,15 @@ Created on Fri Jun  5 09:08:17 2026
 # -*- coding: utf-8 -*-
 
 """
-Convertit 6 composantes tensorielle NIfTI en tenseur 5D NIfTI.
+Convert 6 NIfTI tensor components into a 5D NIfTI tensor.
 
-Entrée :
+Input:
     txx, txy, txz, tyy, tyz, tzz
 
-Sortie :
+Output:
     tensor_5d.nii.gz de forme X,Y,Z,1,6
 
-Aucune transformation spatiale n'est appliquée.
+No spatial transformation is applied.
 """
 
 import argparse
@@ -30,7 +30,7 @@ import numpy as np
 
 COMPONENTS = ["txx", "txy", "txz", "tyy", "tyz", "tzz"]
 
-# Ordre ITK/ANTs pour tenseur symétrique 3D :
+# ITK/ANTs order for a 3D symmetric tensor:
 # [Dxx, Dxy, Dyy, Dxz, Dyz, Dzz]
 COMPONENT_TO_ANTS_INDEX = {
     "txx": 0,
@@ -62,9 +62,9 @@ def load_nifti(path):
 
 def find_component_path(tensor_root, subject, component, component_pattern):
     """
-    Trouve le chemin d'une composante tensorielle.
+    Find the path of a tensor component.
 
-    component_pattern peut être par exemple :
+    component_pattern can be, for example:
         "{subject}_tensor_components/{subject}_Corrected_{component}.nii.gz"
 
     ou :
@@ -82,7 +82,7 @@ def find_component_path(tensor_root, subject, component, component_pattern):
 
     if not path.exists():
         raise FileNotFoundError(
-            f"Composante introuvable pour {component}: {path.resolve()}"
+            f"Component not found for {component}: {path.resolve()}"
         )
 
     return path
@@ -98,37 +98,37 @@ def convert_6_components_to_tensor_5d(
     verbose=True,
 ):
     """
-    Convertit 6 composantes tensorielle en image tenseur 5D.
+    Convert 6 tensor components into a 5D tensor image.
 
-    Paramètres
+    Parameters
     ----------
     subject : str
-        Identifiant sujet, par exemple "sub-28".
+        Subject identifier, for example "sub-28".
 
     tensor_root : str or Path
-        Dossier racine contenant les composantes.
+        Root directory containing the components.
 
     out_path : str or Path
-        Chemin de sortie du tenseur 5D .nii.gz.
+        Output path for the 5D tensor .nii.gz file.
 
     component_pattern : str
-        Pattern relatif à tensor_root.
-        Doit contenir {subject} et {component}.
+        Pattern relative to tensor_root.
+        Must contain {subject} and {component}.
 
     component_to_index : dict or None
-        Mapping vers l'ordre de stockage du tenseur 5D.
-        Par défaut : ordre ANTs/ITK [Dxx, Dxy, Dyy, Dxz, Dyz, Dzz].
+        Mapping to the 5D tensor storage order.
+        Default: ANTs/ITK order [Dxx, Dxy, Dyy, Dxz, Dyz, Dzz].
 
     dtype : np.dtype
-        Type numérique de sortie.
+        Output numeric type.
 
     verbose : bool
-        Affiche les fichiers utilisés.
+        Print the files being used.
 
     Retour
     ------
     out_path : Path
-        Chemin du tenseur 5D généré.
+        Path of the generated 5D tensor.
     """
 
     if component_to_index is None:
@@ -191,7 +191,7 @@ def convert_6_components_to_tensor_5d(
     hdr = tensor_img.header
     hdr.set_data_dtype(dtype)
 
-    # Force explicitement le layout 5D : X,Y,Z,1,6
+    # Explicitly force the 5D layout: X,Y,Z,1,6
     hdr["dim"][0] = 5
     hdr["dim"][1] = shape[0]
     hdr["dim"][2] = shape[1]
@@ -201,7 +201,7 @@ def convert_6_components_to_tensor_5d(
     hdr["dim"][6] = 1
     hdr["dim"][7] = 1
 
-    # NIFTI_INTENT_SYMMATRIX = 1005, matrice symétrique 3x3
+    # NIFTI_INTENT_SYMMATRIX = 1005, symmetric 3x3 matrix
     hdr["intent_code"] = 1005
     hdr["intent_p1"] = 3
 
@@ -222,28 +222,28 @@ def parse_args():
     parser.add_argument(
         "--subject",
         required=True,
-        help="Sujet, ex: sub-28",
+        help="Subject, e.g. sub-28",
     )
 
     parser.add_argument(
         "--tensor-root",
         default=".",
-        help="Dossier racine contenant les composantes.",
+        help="Root directory containing the components.",
     )
 
     parser.add_argument(
         "--component-pattern",
         default="{subject}_tensor_components/{subject}_Corrected_{component}.nii.gz",
         help=(
-            "Pattern relatif à tensor-root. "
-            "Champs disponibles: {subject}, {component}."
+            "Pattern relative to tensor-root. "
+            "Available fields: {subject}, {component}."
         ),
     )
 
     parser.add_argument(
         "--out",
         required=True,
-        help="Chemin de sortie, ex: sub-28_tensor_5d.nii.gz",
+        help="Output path, e.g. sub-28_tensor_5d.nii.gz",
     )
 
     return parser.parse_args()

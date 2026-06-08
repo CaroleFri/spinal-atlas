@@ -12,7 +12,7 @@ import nibabel as nib
 from scipy.io import loadmat, savemat
 
 
-# Ordre ANTs/ITK si ton tenseur 5D vient du script précédent :
+# ANTs/ITK order if your 5D tensor comes from the previous script:
 # [Dxx, Dxy, Dyy, Dxz, Dyz, Dzz]
 COMPONENT_TO_INDEX = {
     "txx": 0,
@@ -26,7 +26,7 @@ COMPONENT_TO_INDEX = {
 
 def load_fib_mat(fib_gz_path):
     """
-    Charge un .fib.gz DSI Studio comme fichier MATLAB v4.
+    Load a DSI Studio .fib.gz file as a MATLAB v4 file.
     """
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -43,11 +43,11 @@ def load_fib_mat(fib_gz_path):
 
 def save_fib_gz(mat_data, out_fib_gz):
     """
-    Sauvegarde un .fib.gz MATLAB v4.
+    Save a MATLAB v4 .fib.gz file.
     """
 
     if not out_fib_gz.endswith(".fib.gz"):
-        raise ValueError("La sortie doit se terminer par .fib.gz")
+        raise ValueError("The output must end with .fib.gz")
 
     out_fib = out_fib_gz[:-3]
 
@@ -69,8 +69,8 @@ def tensor5d_to_fib_with_index0(
     verbose=True,
 ):
     """
-    Convertit un tenseur 5D NIfTI en .fib.gz compatible DSI Studio
-    avec fa0 + index0 + odf_vertices.
+    Convert a 5D NIfTI tensor into a DSI Studio-compatible .fib.gz file
+    with fa0 + index0 + odf_vertices.
 
     index_base:
         "zero" -> index0 entre 0 et N-1
@@ -81,11 +81,11 @@ def tensor5d_to_fib_with_index0(
     tensor5d = img.get_fdata(dtype=np.float64)
 
     if tensor5d.ndim != 5:
-        raise ValueError(f"Tenseur attendu en 5D, shape obtenue: {tensor5d.shape}")
+        raise ValueError(f"Expected a 5D tensor, got shape: {tensor5d.shape}")
 
     if tensor5d.shape[3] != 1 or tensor5d.shape[4] != 6:
         raise ValueError(
-            f"Shape attendue X,Y,Z,1,6 ; shape obtenue: {tensor5d.shape}"
+            f"Expected shape X,Y,Z,1,6; got shape: {tensor5d.shape}"
         )
 
     nx, ny, nz = tensor5d.shape[:3]
@@ -100,15 +100,15 @@ def tensor5d_to_fib_with_index0(
         print(f"Dimension: {dimension}")
         print(f"Voxel size: {voxel_size}")
 
-    # Récupère odf_vertices depuis un vrai .fib.gz DSI Studio
+    # Retrieve odf_vertices from a real DSI Studio .fib.gz file
     base_fib = load_fib_mat(base_fib_gz)
 
     if "odf_vertices" not in base_fib:
-        raise ValueError("Le fichier base_fib_gz ne contient pas odf_vertices")
+        raise ValueError("The base_fib_gz file does not contain odf_vertices")
 
     odf_vertices = np.asarray(base_fib["odf_vertices"], dtype=np.float32)
 
-    # Selon les fichiers, odf_vertices peut être 3 x N ou N x 3.
+    # Depending on the file, odf_vertices can be 3 x N or N x 3.
     if odf_vertices.shape[0] == 3:
         vertices = odf_vertices.T.astype(np.float64)  # N x 3
         odf_vertices_out = odf_vertices
@@ -116,7 +116,7 @@ def tensor5d_to_fib_with_index0(
         vertices = odf_vertices.astype(np.float64)    # N x 3
         odf_vertices_out = odf_vertices.T
     else:
-        raise ValueError(f"Shape inattendue pour odf_vertices: {odf_vertices.shape}")
+        raise ValueError(f"Unexpected shape for odf_vertices: {odf_vertices.shape}")
 
     # Normalisation des vertices
     vertices_norm = np.linalg.norm(vertices, axis=1)
@@ -198,8 +198,8 @@ def tensor5d_to_fib_with_index0(
 
                 v1 = v1 / norm
 
-                # Direction axiale : v et -v sont équivalents.
-                # On prend le vertex qui maximise |dot(v, vertex)|.
+                # Axial direction: v and -v are equivalent.
+                # Use the vertex that maximizes |dot(v, vertex)|.
                 dots = np.abs(vertices @ v1)
                 idx = int(np.argmax(dots))
 
@@ -228,23 +228,23 @@ def tensor5d_to_fib_with_index0(
 
     mat_data = {}
 
-    # On garde tous les champs du .fib initial/template
+    # Keep all fields from the initial/template .fib file
     for key, value in base_fib.items():
         if key.startswith("__"):
             continue
         mat_data[key] = value
 
-    # Puis on remplace les champs calculés à partir du tenseur
+    # Then replace the fields computed from the tensor
     mat_data["dimension"] = dimension
     mat_data["voxel_size"] = voxel_size
     mat_data["fa0"] = fa0
     mat_data["index0"] = index0
 
-    # On force odf_vertices dans le format attendu
+    # Force odf_vertices into the expected format
     mat_data["odf_vertices"] = odf_vertices_out.astype(np.float32)
 
-    # Si odf_faces existe dans le template, on le garde.
-    # Sinon, il sera absent.
+    # If odf_faces exists in the template, keep it.
+    # Otherwise, it will be absent.
     if "odf_faces" in base_fib:
         mat_data["odf_faces"] = base_fib["odf_faces"]
 
@@ -273,7 +273,7 @@ def parse_args():
     parser.add_argument(
         "--template-fib",
         required=True,
-        help="Fichier .fib.gz initial utilisé comme template DSI Studio",
+        help="Initial .fib.gz file used as the DSI Studio template",
     )
 
     parser.add_argument(
@@ -286,7 +286,7 @@ def parse_args():
         "--index-base",
         default="zero",
         choices=["zero", "one"],
-        help="Convention d'indexation pour index0. Essayer zero d'abord.",
+        help="Indexing convention for index0. Try zero first.",
     )
 
     return parser.parse_args()

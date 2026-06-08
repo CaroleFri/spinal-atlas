@@ -20,12 +20,12 @@ import nibabel as nib
 
 EPS = 1e-6
 
-# Axe vertical anatomique utilisé pour stabiliser les vecteurs propres
-# À adapter si nécessaire selon ton espace image.
+# Anatomical vertical axis used to stabilize eigenvectors
+# Adjust if needed depending on your image space.
 VERTICAL_AXIS = np.array([0.0, 0.0, 1.0], dtype=np.float64)
 
-# Ordre des composantes dans le tenseur 5D X,Y,Z,1,6
-# Hypothèse ANTs classique : [Dxx, Dxy, Dxz, Dyy, Dyz, Dzz]
+# Component order in the 5D tensor X,Y,Z,1,6
+# Classical ANTs assumption: [Dxx, Dxy, Dxz, Dyy, Dyz, Dzz]
 COMPONENT_TO_ANTS_INDEX = {
     "txx": 0,
     "txy": 1,
@@ -36,7 +36,7 @@ COMPONENT_TO_ANTS_INDEX = {
 }
 
 # ============================================================
-# Fonctions utilitaires
+# Utility functions
 # ============================================================
 
 def normalize(v, eps=1e-12):
@@ -50,7 +50,7 @@ def normalize(v, eps=1e-12):
 
 def make_spd(D, eps=EPS):
     """
-    Force un tenseur symétrique défini positif.
+    Force a tensor to be symmetric positive definite.
     """
 
     D = 0.5 * (D + D.T)
@@ -78,13 +78,13 @@ def tensor_exp(D):
 
 
 # ============================================================
-# Conversion tenseur 5D <-> matrice 3x3
+# 5D tensor <-> 3x3 matrix conversion
 # ============================================================
 
 def tensor5d_to_matrix(tensor5d):
     """
-    Convertit un tenseur 5D NIfTI X,Y,Z,1,6
-    en tenseur matriciel X,Y,Z,3,3.
+    Convert a 5D NIfTI tensor X,Y,Z,1,6
+    to a matrix tensor X,Y,Z,3,3.
     """
 
     if tensor5d.ndim != 5:
@@ -121,8 +121,8 @@ def tensor5d_to_matrix(tensor5d):
 
 def matrix_to_tensor5d(tensor_matrix):
     """
-    Convertit un tenseur matriciel X,Y,Z,3,3
-    en tenseur 5D X,Y,Z,1,6.
+    Convert a matrix tensor X,Y,Z,3,3
+    to a 5D tensor X,Y,Z,1,6.
     """
 
     if tensor_matrix.ndim != 5:
@@ -149,7 +149,7 @@ def matrix_to_tensor5d(tensor_matrix):
 
 
 # ============================================================
-# Chargement / sauvegarde NIfTI
+# NIfTI loading / saving
 # ============================================================
 
 def load_tensor_5d(path):
@@ -165,9 +165,9 @@ def load_tensor_5d(path):
 
 def load_all_tensors_5d(tensor_paths):
     """
-    Charge tous les tenseurs 5D.
+    Load all 5D tensors.
 
-    Retourne :
+    Returns:
     - ref_img
     - all_tensors : N,X,Y,Z,3,3
     """
@@ -200,7 +200,7 @@ def load_all_tensors_5d(tensor_paths):
 
 def save_tensor_5d(tensor_matrix, ref_img, out_path):
     """
-    Sauvegarde un tenseur X,Y,Z,3,3 au format NIfTI 5D X,Y,Z,1,6.
+    Save a tensor X,Y,Z,3,3 in 5D NIfTI format X,Y,Z,1,6.
     """
 
     out_path = Path(out_path)
@@ -218,7 +218,7 @@ def save_tensor_5d(tensor_matrix, ref_img, out_path):
 
     shape = tensor_matrix.shape[:3]
 
-    # Layout explicite : X,Y,Z,1,6
+    # Explicit layout: X,Y,Z,1,6
     hdr["dim"][0] = 5
     hdr["dim"][1] = shape[0]
     hdr["dim"][2] = shape[1]
@@ -228,7 +228,7 @@ def save_tensor_5d(tensor_matrix, ref_img, out_path):
     hdr["dim"][6] = 1
     hdr["dim"][7] = 1
 
-    # NIFTI_INTENT_SYMMATRIX = 1005, matrice 3x3
+    # NIFTI_INTENT_SYMMATRIX = 1005, 3x3 matrix
     hdr["intent_code"] = 1005
     hdr["intent_p1"] = 3
 
@@ -238,13 +238,13 @@ def save_tensor_5d(tensor_matrix, ref_img, out_path):
 
 
 # ============================================================
-# Fusion 1 : moyenne Log-Euclidienne
+# Fusion 1: Log-Euclidean mean
 # ============================================================
 
 def compute_logeuclidean_mean(all_tensors):
     """
     all_tensors : N,X,Y,Z,3,3
-    retourne : X,Y,Z,3,3
+    returns : X,Y,Z,3,3
     """
 
     n_subjects = all_tensors.shape[0]
@@ -271,15 +271,15 @@ def compute_logeuclidean_mean(all_tensors):
 
 
 # ============================================================
-# Fusion 2 : médiane eigen
+# Fusion 2: eigen median
 # ============================================================
 
 def compute_eigen_median(all_tensors, vertical_axis=VERTICAL_AXIS):
     """
-    Fusion robuste par médiane des valeurs propres et des directions propres.
+    Robust fusion using the median of eigenvalues and eigenvector directions.
 
     all_tensors : N,X,Y,Z,3,3
-    retourne : X,Y,Z,3,3
+    returns: X,Y,Z,3,3
     """
 
     n_subjects = all_tensors.shape[0]
@@ -302,20 +302,20 @@ def compute_eigen_median(all_tensors, vertical_axis=VERTICAL_AXIS):
 
             vals, vecs = np.linalg.eigh(D_spd)
 
-            # np.linalg.eigh sort en ordre croissant.
-            # On inverse pour avoir lambda1 >= lambda2 >= lambda3.
+            # np.linalg.eigh returns values in ascending order.
+            # Reverse the order to get lambda1 >= lambda2 >= lambda3.
             order = np.argsort(vals)[::-1]
             vals = vals[order]
             vecs = vecs[:, order]
 
-            # Tri selon l’alignement à l’axe vertical.
+            # Sort according to alignment with the vertical axis.
             inclinations = np.abs(vecs.T @ vertical)
             order_axis = np.argsort(inclinations)[::-1]
 
             vals = vals[order_axis]
             vecs = vecs[:, order_axis]
 
-            # Correction du signe : v et -v sont équivalents.
+            # Sign correction: v and -v are equivalent.
             for k in range(3):
                 if np.dot(vecs[:, k], vertical) < 0:
                     vecs[:, k] *= -1.0
@@ -326,28 +326,28 @@ def compute_eigen_median(all_tensors, vertical_axis=VERTICAL_AXIS):
         eigenvalues = np.asarray(eigenvalues)
         eigenvectors = np.asarray(eigenvectors)
 
-        # Médiane des valeurs propres
+        # Median of eigenvalues
         med_vals = np.median(eigenvalues, axis=0)
         med_vals = np.clip(med_vals, EPS, None)
 
-        # Médiane composante par composante des vecteurs propres
+        # Component-wise median of eigenvectors
         med_vecs = np.zeros((3, 3), dtype=np.float64)
 
         for k in range(3):
             v = np.median(eigenvectors[:, :, k], axis=0)
             v = normalize(v)
 
-            # Fallback si la médiane donne un vecteur nul
+            # Fallback if the median gives a zero vector
             if np.linalg.norm(v) < 1e-12:
                 v = eigenvectors[0, :, k]
 
             med_vecs[:, k] = v
 
-        # Ré-orthogonalisation par SVD
+        # Re-orthogonalization by SVD
         U, _, Vt = np.linalg.svd(med_vecs)
         med_vecs = U @ Vt
 
-        # Correction pour obtenir une base directe
+        # Correction to obtain a right-handed basis
         if np.linalg.det(med_vecs) < 0:
             med_vecs[:, -1] *= -1.0
 
@@ -360,7 +360,7 @@ def compute_eigen_median(all_tensors, vertical_axis=VERTICAL_AXIS):
 
 
 # ============================================================
-# Pipeline principal
+# Main pipeline
 # ============================================================
 
 def find_tensor_files(tensor_dir, pattern):

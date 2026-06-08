@@ -9,7 +9,7 @@ Created on Fri Jun  5 12:53:16 2026
 from pathlib import Path
 
 # ============================================================
-# PARAMÈTRES À MODIFIER
+# PARAMETERS TO EDIT
 # ============================================================
 
 ROOT = Path("/Users/frindel/Documents/Données-Corentin")
@@ -25,7 +25,7 @@ SUBJECTS = [
 COMPONENTS = ["txx", "txy", "txz", "tyy", "tyz", "tzz"]
 
 # ============================================================
-# FONCTIONS UTILITAIRES
+# UTILITY FUNCTIONS
 # ============================================================
 
 def subj_dir(subject):
@@ -73,7 +73,7 @@ for subject in SUBJECTS:
     print(f"\n=== Traitement de {subject} ===")
 
     # --------------------------------------------------------
-    # 1. Extraire les images b0
+    # 1. Extract b0 images
     # --------------------------------------------------------
 
     runfile(
@@ -88,7 +88,7 @@ for subject in SUBJECTS:
     )
 
     # --------------------------------------------------------
-    # 2. Conversion composantes tenseur en fichier 5D
+    # 2. Convert tensor components to a 5D file
     # --------------------------------------------------------
 
     runfile(
@@ -103,7 +103,7 @@ for subject in SUBJECTS:
     )
 
     # --------------------------------------------------------
-    # 3. Calcul déformation à partir du b0
+    # 3. Compute deformation from b0
     # --------------------------------------------------------
 
     runfile(
@@ -118,7 +118,7 @@ for subject in SUBJECTS:
     )
 
     # --------------------------------------------------------
-    # 4. Appliquer déformation au tenseur
+    # 4. Apply deformation to the tensor
     # --------------------------------------------------------
 
     reg_dir = registration_dir(subject, REFERENCE_SUBJECT)
@@ -139,7 +139,7 @@ for subject in SUBJECTS:
     )
 
     # --------------------------------------------------------
-    # 5. Conversion en fichier .fib des tenseurs bruts
+    # 5. Convert raw tensors to .fib files
     # --------------------------------------------------------
 
     runfile(
@@ -155,7 +155,7 @@ for subject in SUBJECTS:
     
 
     # --------------------------------------------------------
-    # 6. Conversion en fichier .fib des tenseurs reorientes
+    # 6. Convert reoriented tensors to .fib files
     # --------------------------------------------------------
 
     runfile(
@@ -186,7 +186,7 @@ runfile(
 
 
 # --------------------------------------------------------
-# 8. Conversion en fichier .fib des fichiers atlas
+# 8. Convert atlas files to .fib files
 # --------------------------------------------------------
 
 runfile(
