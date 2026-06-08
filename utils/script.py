@@ -72,141 +72,141 @@ for subject in SUBJECTS:
 
     print(f"\n=== Traitement de {subject} ===")
 
-    # # --------------------------------------------------------
-    # # 1. Extraire les images b0
-    # # --------------------------------------------------------
+    # --------------------------------------------------------
+    # 1. Extraire les images b0
+    # --------------------------------------------------------
 
-    # runfile(
-    #     str(UTILS / "extract_b0.py"),
-    #     args=(
-    #         f"--dwi {corrected_nii(subject)} "
-    #         f"--bval {corrected_bval(subject)} "
-    #         f"--bvec {corrected_bvec(subject)} "
-    #         f"--out {b0_file(subject)}"
-    #     ),
-    #     wdir=str(subj_dir(subject))
-    # )
+    runfile(
+        str(UTILS / "extract_b0.py"),
+        args=(
+            f"--dwi {corrected_nii(subject)} "
+            f"--bval {corrected_bval(subject)} "
+            f"--bvec {corrected_bvec(subject)} "
+            f"--out {b0_file(subject)}"
+        ),
+        wdir=str(subj_dir(subject))
+    )
 
-    # # --------------------------------------------------------
-    # # 2. Conversion composantes tenseur en fichier 5D
-    # # --------------------------------------------------------
+    # --------------------------------------------------------
+    # 2. Conversion composantes tenseur en fichier 5D
+    # --------------------------------------------------------
 
-    # runfile(
-    #     str(UTILS / "convert_components_to_tensor5d.py"),
-    #     args=(
-    #         f"--subject {subject} "
-    #         f"--tensor-root {tensor_components_dir(subject)} "
-    #         f"--component-pattern {{subject}}_Corrected_{{component}}.nii.gz "
-    #         f"--out {tensor_5d_file(subject)}"
-    #     ),
-    #     wdir=str(subj_dir(subject))
-    # )
+    runfile(
+        str(UTILS / "convert_components_to_tensor5d.py"),
+        args=(
+            f"--subject {subject} "
+            f"--tensor-root {tensor_components_dir(subject)} "
+            f"--component-pattern {{subject}}_Corrected_{{component}}.nii.gz "
+            f"--out {tensor_5d_file(subject)}"
+        ),
+        wdir=str(subj_dir(subject))
+    )
 
-    # # --------------------------------------------------------
-    # # 3. Calcul déformation à partir du b0
-    # # --------------------------------------------------------
+    # --------------------------------------------------------
+    # 3. Calcul déformation à partir du b0
+    # --------------------------------------------------------
 
-    # runfile(
-    #     str(UTILS / "register_b0_only.py"),
-    #     args=(
-    #         f"--fixed-b0 ../{REFERENCE_SUBJECT}/{b0_file(REFERENCE_SUBJECT)} "
-    #         f"--moving-b0 {b0_file(subject)} "
-    #         f"--outdir {registration_dir(subject, REFERENCE_SUBJECT)} "
-    #         f"--prefix {registration_prefix(subject, REFERENCE_SUBJECT)}"
-    #     ),
-    #     wdir=str(subj_dir(subject))
-    # )
+    runfile(
+        str(UTILS / "register_b0_only.py"),
+        args=(
+            f"--fixed-b0 ../{REFERENCE_SUBJECT}/{b0_file(REFERENCE_SUBJECT)} "
+            f"--moving-b0 {b0_file(subject)} "
+            f"--outdir {registration_dir(subject, REFERENCE_SUBJECT)} "
+            f"--prefix {registration_prefix(subject, REFERENCE_SUBJECT)}"
+        ),
+        wdir=str(subj_dir(subject))
+    )
 
     # --------------------------------------------------------
     # 4. Appliquer déformation au tenseur
     # --------------------------------------------------------
 
-    # reg_dir = registration_dir(subject, REFERENCE_SUBJECT)
-    # reg_prefix = registration_prefix(subject, REFERENCE_SUBJECT)
+    reg_dir = registration_dir(subject, REFERENCE_SUBJECT)
+    reg_prefix = registration_prefix(subject, REFERENCE_SUBJECT)
 
-    # runfile(
-    #     str(UTILS / "apply_existing_transforms_to_tensor.py"),
-    #     args=(
-    #         f"--tensor {tensor_5d_file(subject)} "
-    #         f"--reference ../{REFERENCE_SUBJECT}/{b0_file(REFERENCE_SUBJECT)} "
-    #         f"--warp {reg_dir}/{reg_prefix}1Warp.nii.gz "
-    #         f"--affine {reg_dir}/{reg_prefix}0GenericAffine.mat "
-    #         f"--out ../atlas/{subject}_tensor_to_{REFERENCE_SUBJECT}_reoriented.nii.gz "
-    #         f"--split "
-    #         f"--split-prefix {subject}_to_{REFERENCE_SUBJECT}"
-    #     ),
-    #     wdir=str(subj_dir(subject))
-    # )
+    runfile(
+        str(UTILS / "apply_existing_transforms_to_tensor.py"),
+        args=(
+            f"--tensor {tensor_5d_file(subject)} "
+            f"--reference ../{REFERENCE_SUBJECT}/{b0_file(REFERENCE_SUBJECT)} "
+            f"--warp {reg_dir}/{reg_prefix}1Warp.nii.gz "
+            f"--affine {reg_dir}/{reg_prefix}0GenericAffine.mat "
+            f"--out ../atlas/{subject}_tensor_to_{REFERENCE_SUBJECT}_reoriented.nii.gz "
+            f"--split "
+            f"--split-prefix {subject}_to_{REFERENCE_SUBJECT}"
+        ),
+        wdir=str(subj_dir(subject))
+    )
 
-    # # --------------------------------------------------------
-    # # 5. Conversion en fichier .fib des tenseurs bruts
-    # # --------------------------------------------------------
+    # --------------------------------------------------------
+    # 5. Conversion en fichier .fib des tenseurs bruts
+    # --------------------------------------------------------
 
-    # runfile(
-    #     str(UTILS / "convert_tensor_to_fib.py"),
-    #     args=(
-    #         f"--tensor {tensor_5d_file(subject)} "
-    #         f"--template-fib ../{REFERENCE_SUBJECT}/{REFERENCE_SUBJECT}_Corrected.fib.gz "
-    #         f"--out {tensor_components_dir(subject)}/{subject}_tensor_5d.fib.gz "
-    #         f"--index-base zero"
-    #     ),
-    #     wdir=str(subj_dir(subject))
-    # )
+    runfile(
+        str(UTILS / "convert_tensor_to_fib.py"),
+        args=(
+            f"--tensor {tensor_5d_file(subject)} "
+            f"--template-fib ../{REFERENCE_SUBJECT}/{REFERENCE_SUBJECT}_Corrected.fib.gz "
+            f"--out {tensor_components_dir(subject)}/{subject}_tensor_5d.fib.gz "
+            f"--index-base zero"
+        ),
+        wdir=str(subj_dir(subject))
+    )
     
 
-    # # --------------------------------------------------------
-    # # 6. Conversion en fichier .fib des tenseurs reorientes
-    # # --------------------------------------------------------
+    # --------------------------------------------------------
+    # 6. Conversion en fichier .fib des tenseurs reorientes
+    # --------------------------------------------------------
 
-    # runfile(
-    #     str(UTILS / "convert_tensor_to_fib.py"),
-    #     args=(
-    #         f"--tensor ../atlas/{subject}_tensor_to_{REFERENCE_SUBJECT}_reoriented.nii.gz "
-    #         f"--template-fib ../{REFERENCE_SUBJECT}/{REFERENCE_SUBJECT}_Corrected.fib.gz "
-    #         f"--out ../atlas/{subject}_tensor_to_{REFERENCE_SUBJECT}_reoriented.fib.gz "
-    #         f"--index-base zero"
-    #     ),
-    #     wdir=str(subj_dir(subject))
-    # )
+    runfile(
+        str(UTILS / "convert_tensor_to_fib.py"),
+        args=(
+            f"--tensor ../atlas/{subject}_tensor_to_{REFERENCE_SUBJECT}_reoriented.nii.gz "
+            f"--template-fib ../{REFERENCE_SUBJECT}/{REFERENCE_SUBJECT}_Corrected.fib.gz "
+            f"--out ../atlas/{subject}_tensor_to_{REFERENCE_SUBJECT}_reoriented.fib.gz "
+            f"--index-base zero"
+        ),
+        wdir=str(subj_dir(subject))
+    )
 
 
-# # ============================================================
-# # 7. Fusionner les tenseurs
-# # ============================================================
+# --------------------------------------------------------
+# 7. Tensor fusion
+# --------------------------------------------------------
 
-# runfile(
-#     str(UTILS / "fuse_tensors.py"),
-#     args=(
-#         f"--tensor-dir {ROOT / 'atlas'} "
-#         f"--outdir atlas "
-#         f"--pattern *_tensor_to_{REFERENCE_SUBJECT}_reoriented.nii.gz"
-#     ),
-#     wdir=str(ROOT)
-# )
+runfile(
+    str(UTILS / "fuse_tensors.py"),
+    args=(
+        f"--tensor-dir {ROOT / 'atlas'} "
+        f"--outdir atlas "
+        f"--pattern *_tensor_to_{REFERENCE_SUBJECT}_reoriented.nii.gz"
+    ),
+    wdir=str(ROOT)
+)
 
 
 # --------------------------------------------------------
 # 8. Conversion en fichier .fib des fichiers atlas
 # --------------------------------------------------------
 
-# runfile(
-#     str(UTILS / "convert_tensor_to_fib.py"),
-#     args=(
-#         f"--tensor atlas/atlas_eigen_median_tensor_5d.nii.gz "
-#         f"--template-fib {REFERENCE_SUBJECT}/{REFERENCE_SUBJECT}_Corrected.fib.gz "
-#         f"--out atlas/atlas_eigen_median_tensor_5d.fib.gz "
-#         f"--index-base zero"
-#     ),
-#     wdir=str(ROOT)
-# )
+runfile(
+    str(UTILS / "convert_tensor_to_fib.py"),
+    args=(
+        f"--tensor atlas/atlas_eigen_median_tensor_5d.nii.gz "
+        f"--template-fib {REFERENCE_SUBJECT}/{REFERENCE_SUBJECT}_Corrected.fib.gz "
+        f"--out atlas/atlas_eigen_median_tensor_5d.fib.gz "
+        f"--index-base zero"
+    ),
+    wdir=str(ROOT)
+)
 
-# runfile(
-#     str(UTILS / "convert_tensor_to_fib.py"),
-#     args=(
-#         f"--tensor atlas/atlas_logeuclidean_mean_tensor_5d.nii.gz "
-#         f"--template-fib {REFERENCE_SUBJECT}/{REFERENCE_SUBJECT}_Corrected.fib.gz "
-#         f"--out atlas/atlas_logeuclidean_mean_tensor_5d.fib.gz "
-#         f"--index-base zero"
-#     ),
-#     wdir=str(ROOT)
-# )
+runfile(
+    str(UTILS / "convert_tensor_to_fib.py"),
+    args=(
+        f"--tensor atlas/atlas_logeuclidean_mean_tensor_5d.nii.gz "
+        f"--template-fib {REFERENCE_SUBJECT}/{REFERENCE_SUBJECT}_Corrected.fib.gz "
+        f"--out atlas/atlas_logeuclidean_mean_tensor_5d.fib.gz "
+        f"--index-base zero"
+    ),
+    wdir=str(ROOT)
+)
