@@ -1,5 +1,4 @@
 # spinal-atlas
-These are the codes required to extract the b0 images, align them, and then apply tensor transformations and calculate the atlas through data fusion
 
 This folder contains small scripts to build and use diffusion tensor images in a common reference space.
 
