@@ -27,7 +27,7 @@ python extract_b0.py \
   --out sub-27_b0.nii.gz
 ```
 
-By default, all volumes with `bval == 50` are averaged.
+By default, all volumes with `bval == 0` are averaged.
 
 ---
 
