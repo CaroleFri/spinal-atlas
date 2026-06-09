@@ -115,7 +115,7 @@ moving subject space -> reference subject space
 
 Converts a 5D tensor NIfTI into a `.fib.gz` file for DSI Studio.
 
-It uses an existing `.fib.gz` file (hte reference used for the registration) as a template, mainly to reuse fields such as `odf_vertices`.
+It uses an existing `.fib.gz` file (the reference used for the registration) as a template, mainly to reuse fields such as `odf_vertices`.
 
 Example:
 
