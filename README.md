@@ -11,7 +11,7 @@ The general workflow is:
 5. Optionally convert tensors to `.fib.gz` for DSI Studio.
 6. Fuse registered tensors into tensor atlases.
 
-## Files
+## Utils
 
 ### `extract_b0.py`
 
