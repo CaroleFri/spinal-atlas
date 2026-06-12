@@ -11,7 +11,7 @@ The general workflow is:
 5. Optionally convert tensors to `.fib.gz` for DSI Studio.
 6. Fuse registered tensors into tensor atlases.
 
-## Utils
+## utils
 
 ### `extract_b0.py`
 
@@ -204,5 +204,26 @@ X, Y, Z, 1, 6
 ```
 
 All tensor component images for one subject must have the same shape and affine.
-
 ANTs must be installed and available in the environment, or provided with `--ants-bin`.
+
+## atlas
+
+The `atlas` directory contains the files required to use the tensor atlas and the associated tractography.
+
+### Available files
+
+- `ref_b0.nii.gz`  
+  b0 image of the reference patient.  
+  This image defines the reference space: patient data must be registered to this image in order to correctly use the tensor atlas and the tracked fibers.
+
+- `atlas_tensor.nii.gz`  
+  Tensor atlas built by merging data from 50 patients.  
+  The file contains diffusion tensors represented by the 6 components of the lower triangular part of the symmetric tensor.
+
+- `atlas_tracts.tt.gz`  
+  File containing the fibers tracked on the tensor atlas.  
+  The tractogram was generated in DSI Studio from `atlas_tensor.nii.gz`.
+
+### Usage
+
+To use `atlas_tensor.nii.gz` and `atlas_tracts.tt.gz`, the studied patient data must first be registered to the reference space defined by `ref_b0.nii.gz`.
