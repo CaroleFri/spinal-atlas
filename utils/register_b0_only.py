@@ -43,16 +43,17 @@ def require_file(path, label):
     return path
 
 
-def check_ants_available(ants_bin=None):
+def check_ants_available(ants_bin=None, explicit=False):
     if ants_bin:
         os.environ["PATH"] = str(Path(ants_bin)) + os.pathsep + os.environ["PATH"]
 
-    ants_reg = shutil.which("antsRegistrationSyN.sh")
+    registration_program = "antsRegistration" if explicit else "antsRegistrationSyN.sh"
+    ants_reg = shutil.which(registration_program)
     ants_apply = shutil.which("antsApplyTransforms")
 
     if ants_reg is None:
         raise RuntimeError(
-            "antsRegistrationSyN.sh not found. "
+            f"{registration_program} not found. "
             "Use --ants-bin /path/to/ants/bin"
         )
     if ants_apply is None:
@@ -176,9 +177,30 @@ def parse_args():
         choices=["t", "r", "a", "s", "sr", "so", "b", "br", "bo"],
         help="ANTs transform type. Default s = rigid + affine + SyN",
     )
+    parser.add_argument("--grad-step", type=float, help="Explicit SyN gradient step")
+    parser.add_argument("--reg-iterations", help="SyN iterations per level, e.g. 5000x5000x50")
+    parser.add_argument("--aff-iterations", help="Affine iterations per level, e.g. 2000x500x500x10")
+    parser.add_argument("--aff-sampling", type=int, help="Affine Mattes MI histogram bins")
+    parser.add_argument("--random-seed", type=int, help="Explicit registration seed")
     parser.add_argument("--threads", type=int, default=1)
     parser.add_argument("--dry-run", action="store_true")
-    return parser.parse_args()
+    args = parser.parse_args()
+    explicit = (args.grad_step, args.reg_iterations, args.aff_iterations, args.aff_sampling)
+    if any(value is not None for value in explicit):
+        if any(value is None for value in explicit) or args.random_seed is None:
+            parser.error("Provide all four explicit parameters and --random-seed together")
+        if args.transform_type != "s":
+            parser.error("Explicit parameters currently support --transform-type s only")
+        if not np.isfinite(args.grad_step) or args.grad_step <= 0 or args.aff_sampling < 2:
+            parser.error("grad-step must be positive and aff-sampling at least 2")
+        # The recovered search used three nonlinear and four linear levels.
+        for value, levels in ((args.reg_iterations, 3), (args.aff_iterations, 4)):
+            parts = value.split("x")
+            if len(parts) != levels or not all(part.isdigit() for part in parts) or not any(int(part) for part in parts):
+                parser.error(f"Expected {levels} nonnegative iteration counts separated by x")
+    if args.threads < 1 or (args.random_seed is not None and args.random_seed < 1):
+        parser.error("threads and random-seed must be positive")
+    return args
 
 
 def main():
@@ -191,7 +213,7 @@ def main():
     print("outdir raw:", args.outdir)
     print("prefix:", args.prefix)
 
-    check_ants_available(args.ants_bin)
+    check_ants_available(args.ants_bin, explicit=args.grad_step is not None)
 
     fixed_b0 = require_file(args.fixed_b0, "fixed/reference b0")
     moving_b0 = require_file(args.moving_b0, "moving b0")
@@ -201,16 +223,40 @@ def main():
 
     output_prefix = outdir / args.prefix
 
-    # This estimates the transform ONLY from b0 images.
-    run([
-        "antsRegistrationSyN.sh",
-        "-d", "3",
-        "-f", fixed_b0,
-        "-m", moving_b0,
-        "-o", output_prefix,
-        "-t", args.transform_type,
-        "-n", str(args.threads),
-    ], dry_run=args.dry_run)
+    # Default behavior: keep the original ANTs shell wrapper.
+    if args.grad_step is None:
+        cmd = [
+            "antsRegistrationSyN.sh", "-d", "3",
+            "-f", fixed_b0, "-m", moving_b0, "-o", output_prefix,
+            "-t", args.transform_type, "-n", str(args.threads),
+        ]
+        if args.random_seed is not None:
+            cmd += ["-e", str(args.random_seed)]
+    else:
+        # New explicit b0 registration, not a proven historical optimum.
+        # Per-level settings follow the archived three-/four-level search;
+        # affine + SyN settings here are explicitly applied rather than inherited.
+        for path in (fixed_b0, moving_b0, output_prefix):
+            if any(c in str(path) for c in ",[]"):
+                raise ValueError("ANTs paths must not contain commas or brackets")
+        os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = str(args.threads)
+        cmd = [
+            "antsRegistration", "--dimensionality", "3",
+            "--random-seed", str(args.random_seed), "--verbose", "1",
+            "--interpolation", "Linear", "--collapse-output-transforms", "1",
+            "--write-composite-transform", "0",
+            "--output", f"[{output_prefix},{output_prefix}Warped.nii.gz]",
+            "--initial-moving-transform", f"[{fixed_b0},{moving_b0},1]",
+            "--transform", "Affine[0.25]",
+            "--metric", f"Mattes[{fixed_b0},{moving_b0},1,{args.aff_sampling},Regular,0.2]",
+            "--convergence", f"[{args.aff_iterations},1e-6,10]",
+            "--shrink-factors", "4x2x2x1", "--smoothing-sigmas", "3x2x1x0vox",
+            "--transform", f"SyN[{args.grad_step},3,0]",
+            "--metric", f"Mattes[{fixed_b0},{moving_b0},1,32]",
+            "--convergence", f"[{args.reg_iterations},1e-7,8]",
+            "--shrink-factors", "4x2x1", "--smoothing-sigmas", "2x1x0vox",
+        ]
+    run(cmd, dry_run=args.dry_run)
 
     warped_b0 = Path(str(output_prefix) + "Warped.nii.gz")
     affine = Path(str(output_prefix) + "0GenericAffine.mat")
