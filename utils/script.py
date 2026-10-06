@@ -118,6 +118,27 @@ for subject in SUBJECTS:
     )
 
     # --------------------------------------------------------
+    # 3 bis. Compute deformation from b0
+    # Candidate combination from optimum search.
+    # --------------------------------------------------------
+
+    runfile(
+        str(UTILS / "register_b0_only.py"),
+        args=(
+            f"--fixed-b0 ../{REFERENCE_SUBJECT}/{b0_file(REFERENCE_SUBJECT)} "
+            f"--moving-b0 {b0_file(subject)} "
+            f"--outdir {registration_dir(subject, REFERENCE_SUBJECT)} "
+            f"--prefix {registration_prefix(subject, REFERENCE_SUBJECT)} "
+            f"--grad-step 1.2 "
+            f"--reg-iterations 5000x5000x50 "
+            f"--aff-iterations 2000x500x500x10 "
+            f"--aff-sampling 16 "
+            f"--random-seed 1234"
+        ),
+        wdir=str(subj_dir(subject))
+    )
+
+    # --------------------------------------------------------
     # 4. Apply deformation to the tensor
     # --------------------------------------------------------
 
