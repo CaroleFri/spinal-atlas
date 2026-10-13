@@ -226,22 +226,13 @@ def tensor5d_to_fib_with_index0(
     # BUILD OUTPUT FIB FROM TEMPLATE
     # =========================
 
-    mat_data = {}
-
-    # Keep all fields from the initial/template .fib file
-    for key, value in base_fib.items():
-        if key.startswith("__"):
-            continue
-        mat_data[key] = value
-
-    # Then replace the fields computed from the tensor
-    mat_data["dimension"] = dimension
-    mat_data["voxel_size"] = voxel_size
-    mat_data["fa0"] = fa0
-    mat_data["index0"] = index0
-
-    # Force odf_vertices into the expected format
-    mat_data["odf_vertices"] = odf_vertices_out.astype(np.float32)
+    mat_data = {
+        "dimension": dimension,
+        "voxel_size": voxel_size,
+        "fa0": fa0,
+        "index0": index0,
+        "odf_vertices": odf_vertices_out.astype(np.float32),
+    }
 
     # If odf_faces exists in the template, keep it.
     # Otherwise, it will be absent.
@@ -257,7 +248,6 @@ def tensor5d_to_fib_with_index0(
         print(f"index0 min/max: {np.min(index0)} / {np.max(index0)}")
 
     return out_fib_gz
-
 
 def parse_args():
     parser = argparse.ArgumentParser(
