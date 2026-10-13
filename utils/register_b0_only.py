@@ -233,9 +233,7 @@ def main():
         if args.random_seed is not None:
             cmd += ["-e", str(args.random_seed)]
     else:
-        # New explicit b0 registration, not a proven historical optimum.
-        # Per-level settings follow the archived three-/four-level search;
-        # affine + SyN settings here are explicitly applied rather than inherited.
+        # affine + SyN settings here are explicitly applied
         for path in (fixed_b0, moving_b0, output_prefix):
             if any(c in str(path) for c in ",[]"):
                 raise ValueError("ANTs paths must not contain commas or brackets")
